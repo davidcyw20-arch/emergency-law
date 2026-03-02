@@ -65,3 +65,36 @@ bash scripts/check-db-connection.sh
 - 使用了错误 profile（如 `prod` 配置连到了不可达数据库）。
 
 > 建议：将 `/health` 作为部署后第一检查项；先确认“后端 + DB 已连通”，再分析登录业务逻辑。
+
+
+## 常见启动错误：`No plugin found for prefix 'spring-boot'`
+如果你在 **`emergency-law-web`** 目录执行了：
+
+```bash
+mvn spring-boot:run
+```
+
+会报这个错，因为前端目录是 Vite 项目（`package.json`），**没有后端 `pom.xml`**。
+
+### 正确启动方式
+1. 回到后端项目根目录（与 `pom.xml` 同级）：
+   ```bash
+   cd ..
+   mvn spring-boot:run
+   ```
+2. 或直接在仓库根目录执行：
+   ```bash
+   mvn spring-boot:run
+   ```
+3. 前端仍在 `emergency-law-web` 目录启动：
+   ```bash
+   npm run dev -- --host
+   ```
+
+### 若仍提示插件找不到（镜像仓库问题）
+你的日志里使用的是 `http://maven.aliyun.com/...`。建议改为 HTTPS 新地址或 Maven Central：
+
+- 阿里云（推荐）：`https://maven.aliyun.com/repository/public`
+- Maven Central：`https://repo.maven.apache.org/maven2`
+
+> 先确保“命令执行目录正确”，再排查镜像配置。
