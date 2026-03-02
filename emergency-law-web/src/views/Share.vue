@@ -84,7 +84,7 @@
         <div v-else class="grid">
           <div v-for="p in filtered" :key="p.id" class="postCard">
             <div class="postHead">
-              <div class="postTitle">{{ p.title }}</div>
+              <div class="postTitle" @click="openDetail(p)">{{ p.title }}</div>
               <el-tag size="small" effect="light">{{ p.region || '未知地区' }}</el-tag>
             </div>
 
@@ -105,6 +105,7 @@
             </div>
 
             <div class="postActions">
+              <el-button size="small" @click="openDetail(p)">📖 查看详情</el-button>
               <el-button size="small" :disabled="p.likedByMe" @click="like(p)">👍 点赞 {{ p.likes || 0 }}</el-button>
               <el-button size="small" @click="toggleComments(p)">💬 评论 {{ p.commentCount || 0 }}</el-button>
               <el-button size="small" type="primary" plain @click="quickUse(p)">
@@ -125,6 +126,26 @@
         </div>
       </section>
     </div>
+
+
+
+    <el-dialog v-model="detailOpen" title="经验详情" width="760px" class="detailDialog">
+      <div v-if="detailPost" class="detailWrap">
+        <div class="detailTitle">{{ detailPost.title }}</div>
+        <div class="detailMeta">
+          <span>作者：{{ detailPost.author || '匿名' }}</span>
+          <span>地区：{{ detailPost.region || '未知地区' }}</span>
+          <span>发布时间：{{ fmtTime(detailPost.createdAt) }}</span>
+        </div>
+        <div class="detailTags">
+          <el-tag v-for="t in (detailPost.tags || [])" :key="t" size="small" effect="light" class="tagEl">{{ t }}</el-tag>
+        </div>
+        <div class="detailContent">{{ detailPost.content }}</div>
+      </div>
+      <template #footer>
+        <el-button @click="detailOpen = false">关闭</el-button>
+      </template>
+    </el-dialog>
 
     <el-dialog v-model="createOpen" title="发布经验" width="720px">
       <el-form ref="createRef" :model="createForm" :rules="createRules" label-position="top">
@@ -185,6 +206,8 @@ const creating = ref(false)
 const createRef = ref()
 const commentsMap = reactive({})
 const commentInputMap = reactive({})
+const detailOpen = ref(false)
+const detailPost = ref(null)
 
 const createForm = reactive({
   title: '',
@@ -275,6 +298,11 @@ const filtered = computed(() => {
   else arr.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))
   return arr
 })
+
+function openDetail(p) {
+  detailPost.value = p
+  detailOpen.value = true
+}
 
 function openCreate() {
   createForm.title = ''
@@ -443,12 +471,15 @@ onMounted(async () => {
 
 .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .postCard {
-  background: var(--card); border: 1px solid var(--border); border-radius: 16px;
-  box-shadow: 0 18px 55px rgba(15, 23, 42, 0.06);
-  padding: 14px; display: grid; gap: 10px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(247,250,255,0.96));
+  border: 1px solid rgba(59,130,246,0.12); border-radius: 18px;
+  box-shadow: 0 18px 40px rgba(30, 64, 175, 0.08);
+  padding: 14px; display: grid; gap: 10px; transition: transform .2s ease, box-shadow .2s ease;
 }
+.postCard:hover { transform: translateY(-2px); box-shadow: 0 22px 48px rgba(30,64,175,0.14); }
 .postHead { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
-.postTitle { font-weight: 900; line-height: 1.25; }
+.postTitle { font-weight: 900; line-height: 1.25; cursor: pointer; transition: color .2s; }
+.postTitle:hover { color: #2563eb; }
 
 .postMeta { color: rgba(15,23,42,0.55); font-size: 12px; }
 .dot { margin: 0 6px; color: rgba(15,23,42,0.35); }
@@ -475,4 +506,10 @@ onMounted(async () => {
 .emptyTitle { font-weight: 900; margin-bottom: 6px; }
 .emptyMuted { color: var(--muted); font-size: 12px; }
 .mutedSmall { color: var(--muted); font-size: 12px; line-height: 1.8; }
+
+.detailWrap { display: grid; gap: 12px; }
+.detailTitle { font-size: 22px; font-weight: 900; line-height: 1.35; }
+.detailMeta { display: flex; flex-wrap: wrap; gap: 12px; color: rgba(15,23,42,0.6); font-size: 12px; }
+.detailTags { display: flex; flex-wrap: wrap; gap: 8px; }
+.detailContent { white-space: pre-wrap; line-height: 1.9; color: rgba(15,23,42,0.82); background: rgba(59,130,246,0.05); border: 1px solid rgba(59,130,246,0.12); border-radius: 12px; padding: 12px; }
 </style>
