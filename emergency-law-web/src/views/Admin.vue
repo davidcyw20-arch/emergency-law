@@ -1323,6 +1323,10 @@ async function onVideoFileChange(file) {
     lessonForm.value.contentUrl = res.data.data || ''
     ElMessage.success('本地视频已上传')
   } catch (e) {
+    if (!e?.response) {
+      ElMessage.error('上传失败（Network Error）：请确认后端 8080 已启动，且 /api/admin/courses/{courseId}/lessons/upload-video 可访问')
+      return
+    }
     ElMessage.error(e?.response?.data?.message || e?.message || '上传失败')
   }
 }

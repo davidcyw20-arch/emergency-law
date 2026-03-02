@@ -2,6 +2,10 @@ server:
   port: 8080
 
 spring:
+  servlet:
+    multipart:
+      max-file-size: 200MB
+      max-request-size: 220MB
   datasource:
     url: jdbc:mysql://localhost:3306/emergency_law?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false
     username: law_user
