@@ -20,6 +20,14 @@ export function apiShareLike(id) {
     return http.post(`/api/share/post/${id}/like`)
 }
 
+export function apiShareComments(id) {
+    return http.get(`/api/share/post/${id}/comments`)
+}
+
+export function apiShareComment(id, payload) {
+    return http.post(`/api/share/post/${id}/comment`, payload)
+}
+
 const LS_KEY = 'share_posts_demo'
 
 export function demoLoad() {

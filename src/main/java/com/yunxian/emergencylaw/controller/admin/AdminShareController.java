@@ -6,7 +6,9 @@ import com.yunxian.emergencylaw.entity.SharePost;
 import com.yunxian.emergencylaw.entity.SysUser;
 import com.yunxian.emergencylaw.mapper.SharePostMapper;
 import com.yunxian.emergencylaw.mapper.SysUserMapper;
+import com.yunxian.emergencylaw.service.ShareCommentService;
 import com.yunxian.emergencylaw.service.ShareModerationService;
+import com.yunxian.emergencylaw.service.ShareTagService;
 import lombok.Data;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,11 +24,15 @@ public class AdminShareController {
     private final SharePostMapper sharePostMapper;
     private final SysUserMapper sysUserMapper;
     private final ShareModerationService shareModerationService;
+    private final ShareTagService shareTagService;
+    private final ShareCommentService shareCommentService;
 
-    public AdminShareController(SharePostMapper sharePostMapper, SysUserMapper sysUserMapper, ShareModerationService shareModerationService) {
+    public AdminShareController(SharePostMapper sharePostMapper, SysUserMapper sysUserMapper, ShareModerationService shareModerationService, ShareTagService shareTagService, ShareCommentService shareCommentService) {
         this.sharePostMapper = sharePostMapper;
         this.sysUserMapper = sysUserMapper;
         this.shareModerationService = shareModerationService;
+        this.shareTagService = shareTagService;
+        this.shareCommentService = shareCommentService;
     }
 
     @GetMapping("/posts")
@@ -52,6 +58,8 @@ public class AdminShareController {
             vo.setRegion(p.getRegion());
             vo.setLikes(p.getLikes());
             vo.setCreatedAt(p.getCreatedAt());
+            vo.setTags(shareTagService.getTags(p.getId()));
+            vo.setCommentCount(shareCommentService.count(p.getId()));
             vo.setAuthor(u == null ? null : (u.getNickname() != null ? u.getNickname() : u.getUsername()));
             boolean hidden = shareModerationService.isHidden(p.getId());
             vo.setStatus(hidden ? "已驳回/隐藏" : "已通过/展示");
@@ -95,6 +103,8 @@ public class AdminShareController {
         private LocalDateTime createdAt;
         private String status;
         private String statusKey;
+        private List<String> tags;
+        private Integer commentCount;
     }
 }
 

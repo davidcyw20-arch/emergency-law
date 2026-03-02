@@ -105,10 +105,21 @@
             </div>
 
             <div class="postActions">
-              <el-button size="small" @click="like(p)">👍 点赞 {{ p.likes || 0 }}</el-button>
+              <el-button size="small" :disabled="p.likedByMe" @click="like(p)">👍 点赞 {{ p.likes || 0 }}</el-button>
+              <el-button size="small" @click="toggleComments(p)">💬 评论 {{ p.commentCount || 0 }}</el-button>
               <el-button size="small" type="primary" plain @click="quickUse(p)">
                 一键复制为“经验模板”
               </el-button>
+            </div>
+
+            <div v-if="commentsMap[p.id]" class="commentPanel">
+              <div v-for="c in commentsMap[p.id]" :key="c.id" class="commentItem">
+                <span class="commentAuthor">{{ c.author || '匿名' }}：</span>{{ c.content }}
+              </div>
+              <div class="commentInputRow">
+                <el-input v-model="commentInputMap[p.id]" size="small" placeholder="写评论（仅其他用户可评论）" />
+                <el-button size="small" type="primary" @click="submitComment(p)">发送</el-button>
+              </div>
             </div>
           </div>
         </div>
@@ -155,7 +166,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { apiShareCreate, apiShareLike, apiShareList, demoLoad, demoSave } from '../api/share'
+import { apiShareComment, apiShareComments, apiShareCreate, apiShareLike, apiShareList, demoLoad, demoSave } from '../api/share'
 import { REGIONS } from '../constants/regions'
 
 const router = useRouter()
@@ -172,6 +183,8 @@ const sort = ref('latest')
 const createOpen = ref(false)
 const creating = ref(false)
 const createRef = ref()
+const commentsMap = reactive({})
+const commentInputMap = reactive({})
 
 const createForm = reactive({
   title: '',
@@ -282,11 +295,44 @@ async function like(p) {
   p.likes = before + 1
   try {
     const res = await apiShareLike(p.id)
-    if (!res.data?.success) throw new Error(res.data?.message || 'like failed')
+    if (!res.data?.success) {
+      if ((res.data?.message || '').includes('不可重复点赞')) p.likedByMe = true
+      throw new Error(res.data?.message || 'like failed')
+    }
     if (typeof res.data.data === 'number') p.likes = res.data.data
+    p.likedByMe = true
   } catch (e) {
     p.likes = before
     ElMessage.error(e?.response?.data?.message || e?.message || '点赞失败')
+  }
+}
+
+async function toggleComments(p) {
+  if (commentsMap[p.id]) {
+    commentsMap[p.id] = null
+    return
+  }
+  try {
+    const res = await apiShareComments(p.id)
+    commentsMap[p.id] = res.data?.success ? (res.data.data || []) : []
+  } catch {
+    commentsMap[p.id] = []
+  }
+}
+
+async function submitComment(p) {
+  const content = (commentInputMap[p.id] || '').trim()
+  if (!content) return ElMessage.warning('请输入评论内容')
+
+  try {
+    const res = await apiShareComment(p.id, { content })
+    if (!res.data?.success) throw new Error(res.data?.message || '评论失败')
+    commentsMap[p.id] = [...(commentsMap[p.id] || []), res.data.data]
+    commentInputMap[p.id] = ''
+    p.commentCount = (p.commentCount || 0) + 1
+    ElMessage.success('评论成功')
+  } catch (e) {
+    ElMessage.error(e?.response?.data?.message || e?.message || '评论失败')
   }
 }
 
@@ -419,6 +465,10 @@ onMounted(async () => {
 .postTags { display: flex; flex-wrap: wrap; gap: 8px; }
 .tagEl { border-radius: 999px; }
 .postActions { display: flex; gap: 10px; flex-wrap: wrap; }
+.commentPanel { border-top: 1px dashed rgba(15,23,42,0.1); padding-top: 8px; display: grid; gap: 8px; }
+.commentItem { font-size: 13px; color: rgba(15,23,42,0.78); }
+.commentAuthor { font-weight: 700; }
+.commentInputRow { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
 .dialogGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
 .emptyCard { padding: 18px; border-radius: 16px; border: 1px dashed rgba(15, 23, 42, 0.14); background: rgba(255, 255, 255, 0.6); }

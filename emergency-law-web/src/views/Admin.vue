@@ -272,6 +272,10 @@
             <el-table-column prop="title" label="标题" min-width="240" />
             <el-table-column prop="author" label="作者" width="140" />
             <el-table-column prop="risk" label="风险" width="110" />
+            <el-table-column label="标签" min-width="180">
+              <template #default="{ row }">{{ (row.tags || []).join('、') || '-' }}</template>
+            </el-table-column>
+            <el-table-column prop="commentCount" label="评论" width="90" />
             <el-table-column label="状态" width="150">
               <template #default="{ row }">
                 <span class="pill" :class="row.statusKey">{{ row.status }}</span>
@@ -1587,7 +1591,9 @@ async function loadSharePosts() {
       risk: p.statusKey === 'rejected' ? '中' : '低',
       status: p.status || (p.statusKey === 'rejected' ? '已驳回/隐藏' : '已通过/展示'),
       statusKey: p.statusKey || 'approved',
-      time: p.createdAt ? String(p.createdAt).substring(11, 16) : ''
+      time: p.createdAt ? String(p.createdAt).substring(11, 16) : '',
+      tags: p.tags || [],
+      commentCount: p.commentCount || 0
     }))
   } catch {
     ElMessage.error('加载帖子审核列表失败：请确认后端 8080 正在运行且已用管理员账号登录')
