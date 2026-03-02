@@ -102,7 +102,7 @@
 
             <template v-else-if="lessonDetail?.contentType === 'VIDEO'">
               <template v-if="isVideoFileUrl(lessonDetail?.contentUrl)">
-                <video class="videoPlayer" :src="lessonDetail?.contentUrl" controls preload="metadata" />
+                <video class="videoPlayer" :src="resolveLessonMediaUrl(lessonDetail?.contentUrl)" controls preload="metadata" />
               </template>
               <template v-else>
                 <div class="emptyMuted">当前为视频页面链接，可点击跳转观看</div>
@@ -182,6 +182,20 @@ function goBack() { router.push('/learn') }
 function isVideoFileUrl(url) {
   const u = String(url || '').toLowerCase().split('?')[0]
   return u.startsWith('data:video/') || u.endsWith('.mp4') || u.endsWith('.webm') || u.endsWith('.ogg') || u.endsWith('.m3u8')
+}
+
+function backendOrigin() {
+  const { protocol, hostname } = window.location
+  return `${protocol}//${hostname}:8080`
+}
+
+function resolveLessonMediaUrl(url) {
+  const u = String(url || '').trim()
+  if (!u) return ''
+  if (u.startsWith('http://') || u.startsWith('https://') || u.startsWith('data:') || u.startsWith('blob:')) return u
+  if (!u.startsWith('/')) return u
+  if (u.startsWith('/uploads/')) return `${backendOrigin()}${u}`
+  return u
 }
 
 async function loadMe() {

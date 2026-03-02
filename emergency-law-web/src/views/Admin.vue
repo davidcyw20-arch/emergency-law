@@ -1740,7 +1740,7 @@ async function loadOverview() {
     radial-gradient(1000px 600px at 90% 10%, #d1fae5 0%, transparent 55%),
     linear-gradient(180deg, #f8fafc 0%, #eff6ff 100%);
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
 .mesh {
