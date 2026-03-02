@@ -7,6 +7,7 @@ import com.yunxian.emergencylaw.dto.RegisterRequest;
 import com.yunxian.emergencylaw.entity.SysUser;
 import com.yunxian.emergencylaw.mapper.SysUserMapper;
 import com.yunxian.emergencylaw.security.JwtUtil;
+import com.yunxian.emergencylaw.security.PasswordMatcher;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -68,7 +69,7 @@ public class AuthService {
         if (userDisableService.isDisabled(u.getId())) {
             throw new RuntimeException("账号已停用");
         }
-        if (!password.equals(u.getPassword())) {
+        if (!PasswordMatcher.matches(password, u.getPassword())) {
             throw new RuntimeException("password incorrect");
         }
 
