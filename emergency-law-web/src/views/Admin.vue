@@ -17,6 +17,7 @@
       <div class="topActions">
         <div class="chip">角色：{{ roleLabel }}</div>
         <div class="chip">接口：8080</div>
+        <el-button plain @click="logoutToLogin">退出登录</el-button>
         
       </div>
     </header>
@@ -663,6 +664,12 @@ import {
 import { apiCategories } from '../api/learn'
 
 const me = ref(null)
+
+function logoutToLogin() {
+  localStorage.removeItem('token')
+  localStorage.removeItem('user')
+  window.location.href = '/login'
+}
 
 function isSelf(row) {
   return String(row?.id) === String(me.value?.userId)

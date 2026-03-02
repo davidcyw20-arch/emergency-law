@@ -13,7 +13,7 @@ import TestTake from '../views/TestTake.vue'
 import TestHistory from '../views/TestHistory.vue'
 
 const routes = [
-    { path: '/', redirect: '/learn' },
+    { path: '/', redirect: '/login' },
     { path: '/login', component: Login },
     { path: '/register', component: Register },
 
