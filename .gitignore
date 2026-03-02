@@ -36,3 +36,8 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+# ===== Build Outputs =====
+target/
+emergency-law-web/node_modules/
+emergency-law-web/dist/
