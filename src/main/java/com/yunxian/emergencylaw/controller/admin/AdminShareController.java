@@ -55,6 +55,7 @@ public class AdminShareController {
             PostVO vo = new PostVO();
             vo.setId(p.getId());
             vo.setTitle(p.getTitle());
+            vo.setContent(p.getContent());
             vo.setRegion(p.getRegion());
             vo.setLikes(p.getLikes());
             vo.setCreatedAt(p.getCreatedAt());
@@ -97,6 +98,7 @@ public class AdminShareController {
     public static class PostVO {
         private Long id;
         private String title;
+        private String content;
         private String author;
         private String region;
         private Integer likes;

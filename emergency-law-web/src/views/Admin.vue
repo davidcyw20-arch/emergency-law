@@ -17,7 +17,7 @@
       <div class="topActions">
         <div class="chip">角色：{{ roleLabel }}</div>
         <div class="chip">接口：8080</div>
-        <el-button type="primary" class="primaryBtn" @click="openCourseCreate">新建课程</el-button>
+        
       </div>
     </header>
 
@@ -300,7 +300,7 @@
             </div>
             <div class="sectionActions">
               <el-input v-model="userKeyword" placeholder="搜索用户" clearable />
-              <el-button type="primary" plain @click="inviteUser">邀请</el-button>
+              
             </div>
           </div>
 
@@ -600,6 +600,25 @@
         <el-button type="primary" @click="saveLesson">保存</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="postDetailVisible" title="帖子详情" width="760px">
+      <div v-if="currentPost" class="postDetailWrap">
+        <div class="postDetailTitle">{{ currentPost.title }}</div>
+        <div class="postDetailMeta">
+          <span>作者：{{ currentPost.author || '匿名' }}</span>
+          <span>状态：{{ currentPost.status }}</span>
+          <span>时间：{{ currentPost.time || '-' }}</span>
+        </div>
+        <div class="postDetailTags">
+          <el-tag v-for="t in (currentPost.tags || [])" :key="t" size="small" effect="light">{{ t }}</el-tag>
+        </div>
+        <div class="postDetailContent">{{ currentPost.content || '（暂无正文）' }}</div>
+      </div>
+      <template #footer>
+        <el-button @click="postDetailVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
+
   </div>
 </template>
 
@@ -798,6 +817,8 @@ const mixSum = computed(() =>
 )
 
 const moderationQueue = ref([])
+const postDetailVisible = ref(false)
+const currentPost = ref(null)
 
 const userKeyword = ref('')
 const userRows = ref([])
@@ -1382,7 +1403,8 @@ async function rejectPost(row) {
 }
 
 function viewPost(row) {
-  ElMessage.info(`查看：${row.title}`)
+  currentPost.value = row
+  postDetailVisible.value = true
 }
 
 async function resetUser(row) {
@@ -1419,9 +1441,6 @@ async function toggleUserStatus(row) {
   }
 }
 
-function inviteUser() {
-  ElMessage.success('邀请链接已生成')
-}
 
 function csvEscape(v) {
   const s = String(v ?? '')
@@ -1614,6 +1633,7 @@ async function loadSharePosts() {
       // 后端返回：statusKey = approved/rejected
       id: p.id,
       title: p.title || '',
+      content: p.content || '',
       author: p.author || '匿名',
       risk: p.statusKey === 'rejected' ? '中' : '低',
       status: p.status || (p.statusKey === 'rejected' ? '已驳回/隐藏' : '已通过/展示'),
@@ -1822,6 +1842,11 @@ async function loadOverview() {
 
 .table { width: 100%; }
 :deep(.el-table__body-wrapper) { overflow-x: auto; }
+.postDetailWrap { display: grid; gap: 12px; }
+.postDetailTitle { font-size: 20px; font-weight: 700; line-height: 1.4; }
+.postDetailMeta { display: flex; flex-wrap: wrap; gap: 12px; color: var(--admin-muted); font-size: 12px; }
+.postDetailTags { display: flex; flex-wrap: wrap; gap: 8px; }
+.postDetailContent { white-space: pre-wrap; line-height: 1.9; color: rgba(15,23,42,.82); background: rgba(14,165,164,0.06); border: 1px solid rgba(14,165,164,0.2); border-radius: 12px; padding: 12px; max-height: 52vh; overflow: auto; }
 
 .selectSlim { min-width: 140px; }
 
