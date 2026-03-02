@@ -95,7 +95,7 @@
             </div>
           </div>
 
-          <el-table :data="filteredCourses" stripe class="table">
+          <el-table :ref="setTableRef" :data="filteredCourses" stripe class="table">
             <el-table-column label="封面" width="120">
               <template #default="{ row }">
                 <img
@@ -148,7 +148,7 @@
             </div>
           </div>
 
-          <el-table :data="filteredPapers" stripe class="table">
+          <el-table :ref="setTableRef" :data="filteredPapers" stripe class="table">
             <el-table-column prop="title" label="试卷标题" min-width="260" />
             <el-table-column label="难度" width="120">
               <template #default="{ row }">{{ paperDifficultyLabel(row.difficulty) }}</template>
@@ -268,7 +268,7 @@
             </div>
           </div>
 
-          <el-table :data="moderationQueue" stripe class="table">
+          <el-table :ref="setTableRef" :data="moderationQueue" stripe class="table">
             <el-table-column prop="title" label="标题" min-width="240" />
             <el-table-column prop="author" label="作者" width="140" />
             <el-table-column prop="risk" label="风险" width="110" />
@@ -304,7 +304,7 @@
             </div>
           </div>
 
-          <el-table :data="filteredUsers" stripe class="table">
+          <el-table :ref="setTableRef" :data="filteredUsers" stripe class="table">
             <el-table-column prop="username" label="用户" min-width="200" />
             <el-table-column label="角色" width="130">
               <template #default="{ row }">
@@ -374,7 +374,7 @@
           </div>
 
           <div style="margin-top: 14px">
-            <el-table :data="reportTableRows" stripe class="table">
+            <el-table :ref="setTableRef" :data="reportTableRows" stripe class="table">
               <el-table-column prop="date" label="日期" width="120" />
               <el-table-column prop="newUsers" label="新增用户" width="110" />
               <el-table-column prop="newPosts" label="新增帖子" width="110" />
@@ -474,7 +474,7 @@
         </div>
       </div>
 
-      <el-table :data="paperQuestionRows" stripe class="table">
+      <el-table :ref="setTableRef" :data="paperQuestionRows" stripe class="table">
         <el-table-column prop="sortNo" label="排序" width="80" />
         <el-table-column prop="stem" label="题干" min-width="260" />
         <el-table-column label="答案" width="120">
@@ -554,7 +554,7 @@
         </div>
       </div>
 
-      <el-table :data="lessonRows" stripe class="table">
+      <el-table :ref="setTableRef" :data="lessonRows" stripe class="table">
         <el-table-column prop="title" label="课时标题" min-width="220" />
         <el-table-column prop="contentType" label="类型" width="110" />
         <el-table-column prop="durationMin" label="时长(分钟)" width="110" />
@@ -604,7 +604,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   apiAdminArchiveCourse,
@@ -677,6 +677,26 @@ const overview = ref(null)
 const reportMode = ref('月报')
 const reportData = ref(null)
 const reportLoading = ref(false)
+const tableRefs = ref([])
+let resizeTimer = null
+
+function setTableRef(el) {
+  if (!el) return
+  if (!tableRefs.value.includes(el)) tableRefs.value.push(el)
+}
+
+function relayoutTables() {
+  for (const table of tableRefs.value) {
+    try { table?.doLayout?.() } catch (e) { /* ignore */ }
+  }
+}
+
+function handleResize() {
+  if (resizeTimer) clearTimeout(resizeTimer)
+  resizeTimer = setTimeout(() => {
+    nextTick(() => relayoutTables())
+  }, 120)
+}
 const exporting = ref(false)
 
 const reportRangeText = computed(() => {
@@ -1512,6 +1532,7 @@ async function loadReport() {
 }
 
 onMounted(async () => {
+  window.addEventListener('resize', handleResize)
   const u = localStorage.getItem('user')
   if (u) {
     try {
@@ -1528,6 +1549,12 @@ onMounted(async () => {
   await loadUsers()
   await loadOverview()
   await loadReport()
+  nextTick(() => relayoutTables())
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', handleResize)
+  if (resizeTimer) clearTimeout(resizeTimer)
 })
 
 async function loadCategories() {
@@ -1749,7 +1776,7 @@ async function loadOverview() {
 .sideNoteRow { display: flex; justify-content: space-between; font-size: 13px; color: var(--admin-muted); }
 .sideNoteRow strong { color: var(--admin-ink); }
 
-.content { display: flex; flex-direction: column; gap: 22px; }
+.content { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
 .section { scroll-margin-top: 120px; }
 .sectionHeader {
   display: flex;
@@ -1785,6 +1812,7 @@ async function loadOverview() {
 .statNote { color: var(--admin-muted); }
 
 .panel {
+  min-width: 0;
   padding: 16px;
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.85);
@@ -1793,6 +1821,7 @@ async function loadOverview() {
 }
 
 .table { width: 100%; }
+:deep(.el-table__body-wrapper) { overflow-x: auto; }
 
 .selectSlim { min-width: 140px; }
 
