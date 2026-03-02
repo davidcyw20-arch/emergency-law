@@ -1,0 +1,25 @@
+@token=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0IiwidXNlcm5hbWUiOiLmnY7kupHotKQiLCJyb2xlIjoiVVNFUiIsImlhdCI6MTc2NzAwNzg5MywiZXhwIjoxNzY3MDk0MjkzfQ.6os_SRArMVvoeFQdxHrDAu4ItWwuEsR8jR9-_D-HcmY
+
+### 1) 试卷列表
+GET http://localhost:8080/api/test/papers
+Authorization: Bearer {{token}}
+### 上报学习进度（正确写法：参数跟在 URL 同一行）
+POST http://localhost:8080/api/learn/my/progress/upsert?courseId=1&lessonId=1&progressPercent=60&status=LEARNING
+Authorization: Bearer {{token}}
+### 2) 交卷（变量 token 方式）
+POST http://localhost:8080/api/test/submit
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "paperId": 1,
+  "answers": [0,0,2,1],
+  "usedMin": 2
+}
+
+### 3) 我的成绩
+GET http://localhost:8080/api/test/my/history
+Authorization: Bearer {{token}}
+
+
+

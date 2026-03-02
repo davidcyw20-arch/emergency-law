@@ -1,0 +1,12 @@
+{
+  "autoAssemble" : true,
+  "shuffle" : true,
+  "allowRetake" : true,
+  "passScore" : 60,
+  "timeLimit" : 60,
+  "attempts" : 3,
+  "questionCount" : 8,
+  "easyPct" : 46,
+  "mediumPct" : 39,
+  "hardPct" : 15
+}

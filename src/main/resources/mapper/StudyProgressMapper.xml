@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.yunxian.emergencylaw.mapper.StudyProgressMapper">
+
+    <insert id="upsert" parameterType="com.yunxian.emergencylaw.entity.StudyProgress">
+        INSERT INTO study_progress
+        (user_id, course_id, lesson_id, status, progress_percent, last_study_time)
+        VALUES
+            (#{p.userId}, #{p.courseId}, #{p.lessonId}, #{p.status}, #{p.progressPercent}, #{p.lastStudyTime})
+            ON DUPLICATE KEY UPDATE
+                                 lesson_id = VALUES(lesson_id),
+                                 status = VALUES(status),
+                                 progress_percent = VALUES(progress_percent),
+                                 last_study_time = VALUES(last_study_time)
+    </insert>
+
+</mapper>

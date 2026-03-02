@@ -1,0 +1,38 @@
+### 把 token 放在这里（不用加花括号）
+@token = eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyIiwidXNlcm5hbWUiOiJ0ZXN0MSIsInJvbGUiOiJVU0VSIiwiaWF0IjoxNzY2OTM3MDI2LCJleHAiOjE3NjcwMjM0MjZ9.oX_gaCQmLJU8rT704DfYB1G0qvEGsNSJIQlYjnF737w
+
+### 1) 分类列表
+GET http://localhost:8080/api/learn/categories
+Authorization: Bearer {{token}}
+
+### 2) 课程列表（不筛选）
+GET http://localhost:8080/api/learn/courses
+Authorization: Bearer {{token}}
+
+### 3) 课程列表（按分类筛选）
+GET http://localhost:8080/api/learn/courses?categoryId=1
+Authorization: Bearer {{token}}
+
+### 4) 课程详情（courseId 改成真实ID）
+GET http://localhost:8080/api/learn/course/1
+Authorization: Bearer {{token}}
+
+### 5) 课程课时列表（courseId 改成真实ID）
+GET http://localhost:8080/api/learn/course/1/lessons
+Authorization: Bearer {{token}}
+
+### 6) 课时详情（lessonId 改成真实ID）
+GET http://localhost:8080/api/learn/lesson/1
+Authorization: Bearer {{token}}
+
+### 7) 上报进度（示例：学到 40%）
+POST http://localhost:8080/api/learn/my/progress/upsert?courseId=1&lessonId=1&progressPercent=40&status=LEARNING
+Authorization: Bearer {{token}}
+
+### 8) 查询我在某课程的进度
+GET http://localhost:8080/api/learn/my/progress/1
+Authorization: Bearer {{token}}
+
+### 9) 查询我的进度列表
+GET http://localhost:8080/api/learn/my/progress
+Authorization: Bearer {{token}}
