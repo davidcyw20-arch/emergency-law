@@ -181,7 +181,7 @@ function goBack() { router.push('/learn') }
 
 function isVideoFileUrl(url) {
   const u = String(url || '').toLowerCase().split('?')[0]
-  return u.endsWith('.mp4') || u.endsWith('.webm') || u.endsWith('.ogg') || u.endsWith('.m3u8')
+  return u.startsWith('data:video/') || u.endsWith('.mp4') || u.endsWith('.webm') || u.endsWith('.ogg') || u.endsWith('.m3u8')
 }
 
 async function loadMe() {

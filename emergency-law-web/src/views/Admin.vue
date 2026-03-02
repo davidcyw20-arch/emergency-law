@@ -585,8 +585,16 @@
           <el-input v-model="lessonForm.contentText" type="textarea" :rows="8" placeholder="请输入课程文本内容" />
         </el-form-item>
         <el-form-item :label="lessonForm.contentType === 'VIDEO' ? '视频地址或链接' : '链接地址'" v-else>
-          <el-input v-model="lessonForm.contentUrl" :placeholder="lessonForm.contentType === 'VIDEO' ? '支持 mp4/m3u8 或第三方视频页链接' : 'https://...'" />
-          <div v-if="lessonForm.contentType === 'VIDEO'" class="ruleLabel" style="margin-top:6px">可填写视频直链或在线视频页面链接，用户端会自动展示“打开视频链接”。</div>
+          <el-input v-model="lessonForm.contentUrl" :placeholder="lessonForm.contentType === 'VIDEO' ? '支持本地视频文件、mp4/m3u8 或在线视频页面链接' : 'https://...'" />
+          <template v-if="lessonForm.contentType === 'VIDEO'">
+            <div class="videoUploadRow">
+              <el-upload :show-file-list="false" accept="video/mp4,video/webm,video/ogg,.m3u8" :auto-upload="false" :on-change="onVideoFileChange">
+                <el-button plain>选择本地视频</el-button>
+              </el-upload>
+              <el-button text @click="lessonForm.contentUrl = ''">清空</el-button>
+            </div>
+            <div class="ruleLabel" style="margin-top:6px">可直接选择本地视频文件（会保存为 data URL），或填写在线视频链接。</div>
+          </template>
         </el-form-item>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px">
           <el-form-item label="时长(分钟)">
@@ -1304,6 +1312,18 @@ function openLessonEdit(row) {
   lessonEditDialogVisible.value = true
 }
 
+function onVideoFileChange(file) {
+  const raw = file?.raw
+  if (!raw) return
+  const reader = new FileReader()
+  reader.onload = () => {
+    lessonForm.value.contentUrl = String(reader.result || '')
+    ElMessage.success('本地视频已读取，可直接保存课时')
+  }
+  reader.onerror = () => ElMessage.error('读取本地视频失败')
+  reader.readAsDataURL(raw)
+}
+
 async function saveLesson() {
   if (!lessonsCourseId.value) return
   if (!lessonForm.value.title.trim()) {
@@ -1859,6 +1879,7 @@ async function loadOverview() {
 .postDetailContent { white-space: pre-wrap; line-height: 1.9; color: rgba(15,23,42,.82); background: rgba(14,165,164,0.06); border: 1px solid rgba(14,165,164,0.2); border-radius: 12px; padding: 12px; max-height: 52vh; overflow: auto; }
 
 .selectSlim { min-width: 140px; }
+.videoUploadRow { margin-top: 8px; display: flex; align-items: center; gap: 8px; }
 
 .ruleGrid {
   display: grid;
