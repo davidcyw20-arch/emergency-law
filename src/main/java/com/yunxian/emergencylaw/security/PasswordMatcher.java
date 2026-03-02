@@ -1,5 +1,7 @@
 package com.yunxian.emergencylaw.security;
 
+import org.springframework.security.crypto.bcrypt.BCrypt;
+
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 
@@ -13,21 +15,35 @@ public final class PasswordMatcher {
             return false;
         }
 
-        if (storedPassword.equals(rawPassword)) {
+        String raw = rawPassword.trim();
+        String stored = storedPassword.trim();
+        if (raw.isEmpty() || stored.isEmpty()) {
+            return false;
+        }
+
+        if (stored.equals(raw)) {
             return true;
         }
 
-        String md5 = md5Hex(rawPassword);
-        if (storedPassword.equalsIgnoreCase(md5)) {
+        if (isBcryptHash(stored) && BCrypt.checkpw(raw, stored)) {
             return true;
         }
 
-        if (storedPassword.regionMatches(true, 0, "{MD5}", 0, 5)) {
-            String digest = storedPassword.substring(5).trim();
+        String md5 = md5Hex(raw);
+        if (stored.equalsIgnoreCase(md5)) {
+            return true;
+        }
+
+        if (stored.regionMatches(true, 0, "{MD5}", 0, 5)) {
+            String digest = stored.substring(5).trim();
             return digest.equalsIgnoreCase(md5);
         }
 
         return false;
+    }
+
+    private static boolean isBcryptHash(String hash) {
+        return hash.startsWith("$2a$") || hash.startsWith("$2b$") || hash.startsWith("$2y$");
     }
 
     private static String md5Hex(String input) {
