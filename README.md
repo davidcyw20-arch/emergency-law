@@ -39,6 +39,15 @@ Notes:
    - Windows PowerShell: `Test-NetConnection <db_host> -Port 3306`
 4. 数据库不在本机时，检查安全组/防火墙/路由/DNS 解析。
 
+### 一键检查（本仓库）
+可直接运行：
+
+```bash
+bash scripts/check-db-connection.sh
+```
+
+该脚本会读取 `src/main/resources/application.yml` 的 MySQL URL 并测试端口连通性。
+
 ### 3) 日志定位：根据报错快速归类
 - `Communications link failure` / `Connection timed out`：网络不通或被防火墙拦截。
 - `Connection refused`：目标端口未监听（数据库服务未启动或端口写错）。
