@@ -5,11 +5,18 @@ import com.yunxian.emergencylaw.common.ApiResponse;
 import com.yunxian.emergencylaw.entity.CourseLesson;
 import com.yunxian.emergencylaw.mapper.CourseLessonMapper;
 import lombok.Data;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/admin/courses/{courseId}/lessons")
@@ -64,6 +71,36 @@ public class AdminLessonController {
         if (req.getSortNo() != null) l.setSortNo(req.getSortNo());
         lessonMapper.updateById(l);
         return ApiResponse.ok(l);
+    }
+
+
+    @PostMapping("/upload-video")
+    public ApiResponse<String> uploadVideo(@PathVariable Long courseId,
+                                           @RequestParam("file") MultipartFile file,
+                                           HttpServletRequest request) {
+        if (!isAdmin(request)) return ApiResponse.fail("no permission");
+        if (file == null || file.isEmpty()) return ApiResponse.fail("file required");
+
+        String original = file.getOriginalFilename();
+        String ext = "";
+        if (StringUtils.hasText(original) && original.contains(".")) {
+            ext = original.substring(original.lastIndexOf('.')).toLowerCase();
+        }
+        if (!".mp4".equals(ext) && !".webm".equals(ext) && !".ogg".equals(ext) && !".m3u8".equals(ext)) {
+            return ApiResponse.fail("仅支持 mp4/webm/ogg/m3u8");
+        }
+
+        try {
+            Path dir = Paths.get("data", "uploads", "videos", String.valueOf(courseId));
+            Files.createDirectories(dir);
+            String name = UUID.randomUUID().toString().replace("-", "") + ext;
+            Path target = dir.resolve(name);
+            Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+            String url = "/uploads/videos/" + courseId + "/" + name;
+            return ApiResponse.ok(url);
+        } catch (Exception e) {
+            return ApiResponse.fail("upload failed: " + e.getMessage());
+        }
     }
 
     @DeleteMapping("/{id}")

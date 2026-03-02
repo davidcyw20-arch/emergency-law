@@ -101,10 +101,15 @@
             </template>
 
             <template v-else-if="lessonDetail?.contentType === 'VIDEO'">
-              <div class="emptyMuted">这里后续可接入视频播放</div>
-              <el-link :href="lessonDetail?.contentUrl" target="_blank" type="primary">
-                打开视频链接
-              </el-link>
+              <template v-if="isVideoFileUrl(lessonDetail?.contentUrl)">
+                <video class="videoPlayer" :src="lessonDetail?.contentUrl" controls preload="metadata" />
+              </template>
+              <template v-else>
+                <div class="emptyMuted">当前为视频页面链接，可点击跳转观看</div>
+                <el-link :href="lessonDetail?.contentUrl" target="_blank" type="primary">
+                  打开视频链接
+                </el-link>
+              </template>
             </template>
 
             <div class="actionsRow">
@@ -174,7 +179,13 @@ function goTest() { router.push('/test') }
 function goHistory() { router.push('/test/history') }
 function goBack() { router.push('/learn') }
 
+function isVideoFileUrl(url) {
+  const u = String(url || '').toLowerCase().split('?')[0]
+  return u.startsWith('data:video/') || u.endsWith('.mp4') || u.endsWith('.webm') || u.endsWith('.ogg') || u.endsWith('.m3u8')
+}
+
 async function loadMe() {
+
   try {
     const u = localStorage.getItem('user')
     me.value = u ? JSON.parse(u) : null
@@ -418,4 +429,5 @@ onMounted(async () => {
 .emptyCard { padding: 18px; border-radius: 16px; border: 1px dashed rgba(15, 23, 42, 0.14); background: rgba(255, 255, 255, 0.6); }
 .emptyTitle { font-weight: 900; margin-bottom: 6px; }
 .emptyMuted, .mutedSmall { color: var(--muted); font-size: 12px; }
+.videoPlayer { width: min(860px, 100%); max-height: 460px; border-radius: 14px; border: 1px solid var(--border); background: #000; }
 </style>
