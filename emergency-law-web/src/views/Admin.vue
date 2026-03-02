@@ -593,7 +593,7 @@
               </el-upload>
               <el-button text @click="lessonForm.contentUrl = ''">清空</el-button>
             </div>
-            <div class="ruleLabel" style="margin-top:6px">可直接选择本地视频文件（会保存为 data URL），或填写在线视频链接。</div>
+            <div class="ruleLabel" style="margin-top:6px">可直接选择本地视频文件（上传到服务器后保存 URL），或填写在线视频链接。</div>
           </template>
         </el-form-item>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px">
@@ -667,6 +667,7 @@ import {
   apiAdminUpdateTestQuestion,
   apiAdminUpdateCourse,
   apiAdminUpdateUserRole,
+  apiAdminUploadLessonVideo,
   apiAdminUsers
 } from '../api/admin'
 import { apiCategories } from '../api/learn'
@@ -1312,16 +1313,18 @@ function openLessonEdit(row) {
   lessonEditDialogVisible.value = true
 }
 
-function onVideoFileChange(file) {
+async function onVideoFileChange(file) {
   const raw = file?.raw
   if (!raw) return
-  const reader = new FileReader()
-  reader.onload = () => {
-    lessonForm.value.contentUrl = String(reader.result || '')
-    ElMessage.success('本地视频已读取，可直接保存课时')
+  if (!lessonsCourseId.value) return ElMessage.error('请先选择课程')
+  try {
+    const res = await apiAdminUploadLessonVideo(lessonsCourseId.value, raw)
+    if (!res.data?.success) return ElMessage.error(res.data?.message || '上传失败')
+    lessonForm.value.contentUrl = res.data.data || ''
+    ElMessage.success('本地视频已上传')
+  } catch (e) {
+    ElMessage.error(e?.response?.data?.message || e?.message || '上传失败')
   }
-  reader.onerror = () => ElMessage.error('读取本地视频失败')
-  reader.readAsDataURL(raw)
 }
 
 async function saveLesson() {
