@@ -178,8 +178,7 @@
               <div class="sectionSub">组卷蓝图与评分策略配置。</div>
             </div>
             <div class="sectionActions">
-              <el-button plain @click="duplicateRules">复制</el-button>
-              <el-button type="primary" plain @click="saveRules">保存规则</el-button>
+                            <el-button type="primary" plain @click="saveRules">保存规则</el-button>
             </div>
           </div>
 
@@ -263,12 +262,13 @@
               <div class="sectionSub">结合风险信号与上下文审核内容。</div>
             </div>
             <div class="sectionActions">
+              <el-input v-model="moderationTagKeyword" placeholder="按标签搜索帖子" clearable class="selectSlim" />
               <el-button plain @click="autoTriage">自动分流</el-button>
               <el-button type="danger" plain @click="bulkReject">批量驳回</el-button>
             </div>
           </div>
 
-          <el-table :ref="setTableRef" :data="moderationQueue" stripe class="table">
+          <el-table :ref="setTableRef" :data="filteredModerationQueue" stripe class="table">
             <el-table-column prop="title" label="标题" min-width="240" />
             <el-table-column prop="author" label="作者" width="140" />
             <el-table-column prop="risk" label="风险" width="110" />
@@ -583,8 +583,9 @@
         <el-form-item label="文本内容" v-if="lessonForm.contentType === 'TEXT'">
           <el-input v-model="lessonForm.contentText" type="textarea" :rows="8" placeholder="请输入课程文本内容" />
         </el-form-item>
-        <el-form-item label="链接地址" v-else>
-          <el-input v-model="lessonForm.contentUrl" placeholder="https://..." />
+        <el-form-item :label="lessonForm.contentType === 'VIDEO' ? '视频地址或链接' : '链接地址'" v-else>
+          <el-input v-model="lessonForm.contentUrl" :placeholder="lessonForm.contentType === 'VIDEO' ? '支持 mp4/m3u8 或第三方视频页链接' : 'https://...'" />
+          <div v-if="lessonForm.contentType === 'VIDEO'" class="ruleLabel" style="margin-top:6px">可填写视频直链或在线视频页面链接，用户端会自动展示“打开视频链接”。</div>
         </el-form-item>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px">
           <el-form-item label="时长(分钟)">
@@ -817,6 +818,12 @@ const mixSum = computed(() =>
 )
 
 const moderationQueue = ref([])
+const moderationTagKeyword = ref('')
+const filteredModerationQueue = computed(() => {
+  const k = moderationTagKeyword.value.trim().toLowerCase()
+  if (!k) return moderationQueue.value
+  return moderationQueue.value.filter((row) => (row.tags || []).some((t) => String(t || '').toLowerCase().includes(k)))
+})
 const postDetailVisible = ref(false)
 const currentPost = ref(null)
 
@@ -1301,7 +1308,7 @@ async function saveLesson() {
     return
   }
   if (lessonForm.value.contentType !== 'TEXT' && !String(lessonForm.value.contentUrl || '').trim()) {
-    ElMessage.warning('请填写链接地址')
+    ElMessage.warning(lessonForm.value.contentType === 'VIDEO' ? '请填写视频地址或链接' : '请填写链接地址')
     return
   }
 
@@ -1346,10 +1353,6 @@ async function deleteLesson(row) {
   } catch (e) {
     ElMessage.error(e?.response?.data?.message || e?.message || '删除失败')
   }
-}
-
-function duplicateRules() {
-  ElMessage.success('规则已复制为草稿')
 }
 
 async function saveRules() {
