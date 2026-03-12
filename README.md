@@ -2,6 +2,10 @@
 
 VS Code friendly setup for the Spring Boot API and Vite + Vue frontend.
 
+## 项目说明书
+
+- 完整说明书见：`docs/系统说明书.md`
+
 ## 详细环境配置与启动方式（推荐按本节执行）
 
 本项目是 **前后端分离**：
