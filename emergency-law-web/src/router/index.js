@@ -13,7 +13,7 @@ import TestTake from '../views/TestTake.vue'
 import TestHistory from '../views/TestHistory.vue'
 
 const routes = [
-    { path: '/', redirect: '/learn' },
+    { path: '/', redirect: '/login' },
     { path: '/login', component: Login },
     { path: '/register', component: Register },
 
@@ -40,17 +40,23 @@ router.beforeEach((to, from, next) => {
     const token = localStorage.getItem('token')
     if (!token) return next('/login')
 
-    if (to.path.startsWith('/admin')) {
-        const raw = localStorage.getItem('user')
-        let role = ''
-        if (raw) {
-            try {
-                role = JSON.parse(raw)?.role || ''
-            } catch {
-                role = ''
-            }
+    const raw = localStorage.getItem('user')
+    let role = ''
+    if (raw) {
+        try {
+            role = JSON.parse(raw)?.role || ''
+        } catch {
+            role = ''
         }
+    }
+
+    if (to.path.startsWith('/admin')) {
         if (role !== 'ADMIN') return next('/learn')
+    }
+
+    // 管理员账号只允许进入管理端页面
+    if (role === 'ADMIN' && !to.path.startsWith('/admin')) {
+        return next('/admin')
     }
 
     next()

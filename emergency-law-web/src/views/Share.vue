@@ -84,7 +84,7 @@
         <div v-else class="grid">
           <div v-for="p in filtered" :key="p.id" class="postCard">
             <div class="postHead">
-              <div class="postTitle">{{ p.title }}</div>
+              <div class="postTitle" @click="openDetail(p)">{{ p.title }}</div>
               <el-tag size="small" effect="light">{{ p.region || '未知地区' }}</el-tag>
             </div>
 
@@ -105,15 +105,47 @@
             </div>
 
             <div class="postActions">
-              <el-button size="small" @click="like(p)">👍 点赞 {{ p.likes || 0 }}</el-button>
+              <el-button size="small" @click="openDetail(p)">📖 查看详情</el-button>
+              <el-button size="small" :disabled="p.likedByMe" @click="like(p)">👍 点赞 {{ p.likes || 0 }}</el-button>
+              <el-button size="small" @click="toggleComments(p)">💬 评论 {{ p.commentCount || 0 }}</el-button>
               <el-button size="small" type="primary" plain @click="quickUse(p)">
                 一键复制为“经验模板”
               </el-button>
+            </div>
+
+            <div v-if="commentsMap[p.id]" class="commentPanel">
+              <div v-for="c in commentsMap[p.id]" :key="c.id" class="commentItem">
+                <span class="commentAuthor">{{ c.author || '匿名' }}：</span>{{ c.content }}
+              </div>
+              <div class="commentInputRow">
+                <el-input v-model="commentInputMap[p.id]" size="small" placeholder="写评论（仅其他用户可评论）" />
+                <el-button size="small" type="primary" @click="submitComment(p)">发送</el-button>
+              </div>
             </div>
           </div>
         </div>
       </section>
     </div>
+
+
+
+    <el-dialog v-model="detailOpen" title="经验详情" width="760px" class="detailDialog">
+      <div v-if="detailPost" class="detailWrap">
+        <div class="detailTitle">{{ detailPost.title }}</div>
+        <div class="detailMeta">
+          <span>作者：{{ detailPost.author || '匿名' }}</span>
+          <span>地区：{{ detailPost.region || '未知地区' }}</span>
+          <span>发布时间：{{ fmtTime(detailPost.createdAt) }}</span>
+        </div>
+        <div class="detailTags">
+          <el-tag v-for="t in (detailPost.tags || [])" :key="t" size="small" effect="light" class="tagEl">{{ t }}</el-tag>
+        </div>
+        <div class="detailContent">{{ detailPost.content }}</div>
+      </div>
+      <template #footer>
+        <el-button @click="detailOpen = false">关闭</el-button>
+      </template>
+    </el-dialog>
 
     <el-dialog v-model="createOpen" title="发布经验" width="720px">
       <el-form ref="createRef" :model="createForm" :rules="createRules" label-position="top">
@@ -155,7 +187,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { apiShareCreate, apiShareLike, apiShareList, demoLoad, demoSave } from '../api/share'
+import { apiShareComment, apiShareComments, apiShareCreate, apiShareLike, apiShareList, demoLoad, demoSave } from '../api/share'
 import { REGIONS } from '../constants/regions'
 
 const router = useRouter()
@@ -172,6 +204,10 @@ const sort = ref('latest')
 const createOpen = ref(false)
 const creating = ref(false)
 const createRef = ref()
+const commentsMap = reactive({})
+const commentInputMap = reactive({})
+const detailOpen = ref(false)
+const detailPost = ref(null)
 
 const createForm = reactive({
   title: '',
@@ -263,6 +299,11 @@ const filtered = computed(() => {
   return arr
 })
 
+function openDetail(p) {
+  detailPost.value = p
+  detailOpen.value = true
+}
+
 function openCreate() {
   createForm.title = ''
   createForm.content = ''
@@ -282,11 +323,44 @@ async function like(p) {
   p.likes = before + 1
   try {
     const res = await apiShareLike(p.id)
-    if (!res.data?.success) throw new Error(res.data?.message || 'like failed')
+    if (!res.data?.success) {
+      if ((res.data?.message || '').includes('不可重复点赞')) p.likedByMe = true
+      throw new Error(res.data?.message || 'like failed')
+    }
     if (typeof res.data.data === 'number') p.likes = res.data.data
+    p.likedByMe = true
   } catch (e) {
     p.likes = before
     ElMessage.error(e?.response?.data?.message || e?.message || '点赞失败')
+  }
+}
+
+async function toggleComments(p) {
+  if (commentsMap[p.id]) {
+    commentsMap[p.id] = null
+    return
+  }
+  try {
+    const res = await apiShareComments(p.id)
+    commentsMap[p.id] = res.data?.success ? (res.data.data || []) : []
+  } catch {
+    commentsMap[p.id] = []
+  }
+}
+
+async function submitComment(p) {
+  const content = (commentInputMap[p.id] || '').trim()
+  if (!content) return ElMessage.warning('请输入评论内容')
+
+  try {
+    const res = await apiShareComment(p.id, { content })
+    if (!res.data?.success) throw new Error(res.data?.message || '评论失败')
+    commentsMap[p.id] = [...(commentsMap[p.id] || []), res.data.data]
+    commentInputMap[p.id] = ''
+    p.commentCount = (p.commentCount || 0) + 1
+    ElMessage.success('评论成功')
+  } catch (e) {
+    ElMessage.error(e?.response?.data?.message || e?.message || '评论失败')
   }
 }
 
@@ -397,12 +471,15 @@ onMounted(async () => {
 
 .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .postCard {
-  background: var(--card); border: 1px solid var(--border); border-radius: 16px;
-  box-shadow: 0 18px 55px rgba(15, 23, 42, 0.06);
-  padding: 14px; display: grid; gap: 10px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(247,250,255,0.96));
+  border: 1px solid rgba(59,130,246,0.12); border-radius: 18px;
+  box-shadow: 0 18px 40px rgba(30, 64, 175, 0.08);
+  padding: 14px; display: grid; gap: 10px; transition: transform .2s ease, box-shadow .2s ease;
 }
+.postCard:hover { transform: translateY(-2px); box-shadow: 0 22px 48px rgba(30,64,175,0.14); }
 .postHead { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
-.postTitle { font-weight: 900; line-height: 1.25; }
+.postTitle { font-weight: 900; line-height: 1.25; cursor: pointer; transition: color .2s; }
+.postTitle:hover { color: #2563eb; }
 
 .postMeta { color: rgba(15,23,42,0.55); font-size: 12px; }
 .dot { margin: 0 6px; color: rgba(15,23,42,0.35); }
@@ -419,10 +496,20 @@ onMounted(async () => {
 .postTags { display: flex; flex-wrap: wrap; gap: 8px; }
 .tagEl { border-radius: 999px; }
 .postActions { display: flex; gap: 10px; flex-wrap: wrap; }
+.commentPanel { border-top: 1px dashed rgba(15,23,42,0.1); padding-top: 8px; display: grid; gap: 8px; }
+.commentItem { font-size: 13px; color: rgba(15,23,42,0.78); }
+.commentAuthor { font-weight: 700; }
+.commentInputRow { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
 .dialogGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
 .emptyCard { padding: 18px; border-radius: 16px; border: 1px dashed rgba(15, 23, 42, 0.14); background: rgba(255, 255, 255, 0.6); }
 .emptyTitle { font-weight: 900; margin-bottom: 6px; }
 .emptyMuted { color: var(--muted); font-size: 12px; }
 .mutedSmall { color: var(--muted); font-size: 12px; line-height: 1.8; }
+
+.detailWrap { display: grid; gap: 12px; }
+.detailTitle { font-size: 22px; font-weight: 900; line-height: 1.35; }
+.detailMeta { display: flex; flex-wrap: wrap; gap: 12px; color: rgba(15,23,42,0.6); font-size: 12px; }
+.detailTags { display: flex; flex-wrap: wrap; gap: 8px; }
+.detailContent { white-space: pre-wrap; line-height: 1.9; color: rgba(15,23,42,0.82); background: rgba(59,130,246,0.05); border: 1px solid rgba(59,130,246,0.12); border-radius: 12px; padding: 12px; }
 </style>

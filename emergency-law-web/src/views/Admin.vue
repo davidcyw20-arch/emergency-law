@@ -17,7 +17,8 @@
       <div class="topActions">
         <div class="chip">角色：{{ roleLabel }}</div>
         <div class="chip">接口：8080</div>
-        <el-button type="primary" class="primaryBtn" @click="openCourseCreate">新建课程</el-button>
+        <el-button plain @click="logoutToLogin">退出登录</el-button>
+        
       </div>
     </header>
 
@@ -95,7 +96,7 @@
             </div>
           </div>
 
-          <el-table :data="filteredCourses" stripe class="table">
+          <el-table :ref="setTableRef" :data="filteredCourses" stripe class="table">
             <el-table-column label="封面" width="120">
               <template #default="{ row }">
                 <img
@@ -148,7 +149,7 @@
             </div>
           </div>
 
-          <el-table :data="filteredPapers" stripe class="table">
+          <el-table :ref="setTableRef" :data="filteredPapers" stripe class="table">
             <el-table-column prop="title" label="试卷标题" min-width="260" />
             <el-table-column label="难度" width="120">
               <template #default="{ row }">{{ paperDifficultyLabel(row.difficulty) }}</template>
@@ -178,8 +179,7 @@
               <div class="sectionSub">组卷蓝图与评分策略配置。</div>
             </div>
             <div class="sectionActions">
-              <el-button plain @click="duplicateRules">复制</el-button>
-              <el-button type="primary" plain @click="saveRules">保存规则</el-button>
+                            <el-button type="primary" plain @click="saveRules">保存规则</el-button>
             </div>
           </div>
 
@@ -263,15 +263,20 @@
               <div class="sectionSub">结合风险信号与上下文审核内容。</div>
             </div>
             <div class="sectionActions">
+              <el-input v-model="moderationTagKeyword" placeholder="按标签搜索帖子" clearable class="selectSlim" />
               <el-button plain @click="autoTriage">自动分流</el-button>
               <el-button type="danger" plain @click="bulkReject">批量驳回</el-button>
             </div>
           </div>
 
-          <el-table :data="moderationQueue" stripe class="table">
+          <el-table :ref="setTableRef" :data="filteredModerationQueue" stripe class="table">
             <el-table-column prop="title" label="标题" min-width="240" />
             <el-table-column prop="author" label="作者" width="140" />
             <el-table-column prop="risk" label="风险" width="110" />
+            <el-table-column label="标签" min-width="180">
+              <template #default="{ row }">{{ (row.tags || []).join('、') || '-' }}</template>
+            </el-table-column>
+            <el-table-column prop="commentCount" label="评论" width="90" />
             <el-table-column label="状态" width="150">
               <template #default="{ row }">
                 <span class="pill" :class="row.statusKey">{{ row.status }}</span>
@@ -296,11 +301,11 @@
             </div>
             <div class="sectionActions">
               <el-input v-model="userKeyword" placeholder="搜索用户" clearable />
-              <el-button type="primary" plain @click="inviteUser">邀请</el-button>
+              
             </div>
           </div>
 
-          <el-table :data="filteredUsers" stripe class="table">
+          <el-table :ref="setTableRef" :data="filteredUsers" stripe class="table">
             <el-table-column prop="username" label="用户" min-width="200" />
             <el-table-column label="角色" width="130">
               <template #default="{ row }">
@@ -370,7 +375,7 @@
           </div>
 
           <div style="margin-top: 14px">
-            <el-table :data="reportTableRows" stripe class="table">
+            <el-table :ref="setTableRef" :data="reportTableRows" stripe class="table">
               <el-table-column prop="date" label="日期" width="120" />
               <el-table-column prop="newUsers" label="新增用户" width="110" />
               <el-table-column prop="newPosts" label="新增帖子" width="110" />
@@ -470,7 +475,7 @@
         </div>
       </div>
 
-      <el-table :data="paperQuestionRows" stripe class="table">
+      <el-table :ref="setTableRef" :data="paperQuestionRows" stripe class="table">
         <el-table-column prop="sortNo" label="排序" width="80" />
         <el-table-column prop="stem" label="题干" min-width="260" />
         <el-table-column label="答案" width="120">
@@ -550,7 +555,7 @@
         </div>
       </div>
 
-      <el-table :data="lessonRows" stripe class="table">
+      <el-table :ref="setTableRef" :data="lessonRows" stripe class="table">
         <el-table-column prop="title" label="课时标题" min-width="220" />
         <el-table-column prop="contentType" label="类型" width="110" />
         <el-table-column prop="durationMin" label="时长(分钟)" width="110" />
@@ -579,8 +584,17 @@
         <el-form-item label="文本内容" v-if="lessonForm.contentType === 'TEXT'">
           <el-input v-model="lessonForm.contentText" type="textarea" :rows="8" placeholder="请输入课程文本内容" />
         </el-form-item>
-        <el-form-item label="链接地址" v-else>
-          <el-input v-model="lessonForm.contentUrl" placeholder="https://..." />
+        <el-form-item :label="lessonForm.contentType === 'VIDEO' ? '视频地址或链接' : '链接地址'" v-else>
+          <el-input v-model="lessonForm.contentUrl" :placeholder="lessonForm.contentType === 'VIDEO' ? '支持本地视频文件、mp4/m3u8 或在线视频页面链接' : 'https://...'" />
+          <template v-if="lessonForm.contentType === 'VIDEO'">
+            <div class="videoUploadRow">
+              <el-upload :show-file-list="false" accept="video/mp4,video/webm,video/ogg,.m3u8" :auto-upload="false" :on-change="onVideoFileChange">
+                <el-button plain>选择本地视频</el-button>
+              </el-upload>
+              <el-button text @click="lessonForm.contentUrl = ''">清空</el-button>
+            </div>
+            <div class="ruleLabel" style="margin-top:6px">可直接选择本地视频文件（上传到服务器后保存 URL），或填写在线视频链接。</div>
+          </template>
         </el-form-item>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px">
           <el-form-item label="时长(分钟)">
@@ -596,11 +610,30 @@
         <el-button type="primary" @click="saveLesson">保存</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="postDetailVisible" title="帖子详情" width="760px">
+      <div v-if="currentPost" class="postDetailWrap">
+        <div class="postDetailTitle">{{ currentPost.title }}</div>
+        <div class="postDetailMeta">
+          <span>作者：{{ currentPost.author || '匿名' }}</span>
+          <span>状态：{{ currentPost.status }}</span>
+          <span>时间：{{ currentPost.time || '-' }}</span>
+        </div>
+        <div class="postDetailTags">
+          <el-tag v-for="t in (currentPost.tags || [])" :key="t" size="small" effect="light">{{ t }}</el-tag>
+        </div>
+        <div class="postDetailContent">{{ currentPost.content || '（暂无正文）' }}</div>
+      </div>
+      <template #footer>
+        <el-button @click="postDetailVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
+
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   apiAdminArchiveCourse,
@@ -634,11 +667,18 @@ import {
   apiAdminUpdateTestQuestion,
   apiAdminUpdateCourse,
   apiAdminUpdateUserRole,
+  apiAdminUploadLessonVideo,
   apiAdminUsers
 } from '../api/admin'
 import { apiCategories } from '../api/learn'
 
 const me = ref(null)
+
+function logoutToLogin() {
+  localStorage.removeItem('token')
+  localStorage.removeItem('user')
+  window.location.href = '/login'
+}
 
 function isSelf(row) {
   return String(row?.id) === String(me.value?.userId)
@@ -673,6 +713,26 @@ const overview = ref(null)
 const reportMode = ref('月报')
 const reportData = ref(null)
 const reportLoading = ref(false)
+const tableRefs = ref([])
+let resizeTimer = null
+
+function setTableRef(el) {
+  if (!el) return
+  if (!tableRefs.value.includes(el)) tableRefs.value.push(el)
+}
+
+function relayoutTables() {
+  for (const table of tableRefs.value) {
+    try { table?.doLayout?.() } catch (e) { /* ignore */ }
+  }
+}
+
+function handleResize() {
+  if (resizeTimer) clearTimeout(resizeTimer)
+  resizeTimer = setTimeout(() => {
+    nextTick(() => relayoutTables())
+  }, 120)
+}
 const exporting = ref(false)
 
 const reportRangeText = computed(() => {
@@ -774,6 +834,14 @@ const mixSum = computed(() =>
 )
 
 const moderationQueue = ref([])
+const moderationTagKeyword = ref('')
+const filteredModerationQueue = computed(() => {
+  const k = moderationTagKeyword.value.trim().toLowerCase()
+  if (!k) return moderationQueue.value
+  return moderationQueue.value.filter((row) => (row.tags || []).some((t) => String(t || '').toLowerCase().includes(k)))
+})
+const postDetailVisible = ref(false)
+const currentPost = ref(null)
 
 const userKeyword = ref('')
 const userRows = ref([])
@@ -1245,6 +1313,24 @@ function openLessonEdit(row) {
   lessonEditDialogVisible.value = true
 }
 
+async function onVideoFileChange(file) {
+  const raw = file?.raw
+  if (!raw) return
+  if (!lessonsCourseId.value) return ElMessage.error('请先选择课程')
+  try {
+    const res = await apiAdminUploadLessonVideo(lessonsCourseId.value, raw)
+    if (!res.data?.success) return ElMessage.error(res.data?.message || '上传失败')
+    lessonForm.value.contentUrl = res.data.data || ''
+    ElMessage.success('本地视频已上传')
+  } catch (e) {
+    if (!e?.response) {
+      ElMessage.error('上传失败（Network Error）：请确认后端 8080 已启动，且 /api/admin/courses/{courseId}/lessons/upload-video 可访问')
+      return
+    }
+    ElMessage.error(e?.response?.data?.message || e?.message || '上传失败')
+  }
+}
+
 async function saveLesson() {
   if (!lessonsCourseId.value) return
   if (!lessonForm.value.title.trim()) {
@@ -1256,7 +1342,7 @@ async function saveLesson() {
     return
   }
   if (lessonForm.value.contentType !== 'TEXT' && !String(lessonForm.value.contentUrl || '').trim()) {
-    ElMessage.warning('请填写链接地址')
+    ElMessage.warning(lessonForm.value.contentType === 'VIDEO' ? '请填写视频地址或链接' : '请填写链接地址')
     return
   }
 
@@ -1301,10 +1387,6 @@ async function deleteLesson(row) {
   } catch (e) {
     ElMessage.error(e?.response?.data?.message || e?.message || '删除失败')
   }
-}
-
-function duplicateRules() {
-  ElMessage.success('规则已复制为草稿')
 }
 
 async function saveRules() {
@@ -1358,7 +1440,8 @@ async function rejectPost(row) {
 }
 
 function viewPost(row) {
-  ElMessage.info(`查看：${row.title}`)
+  currentPost.value = row
+  postDetailVisible.value = true
 }
 
 async function resetUser(row) {
@@ -1395,9 +1478,6 @@ async function toggleUserStatus(row) {
   }
 }
 
-function inviteUser() {
-  ElMessage.success('邀请链接已生成')
-}
 
 function csvEscape(v) {
   const s = String(v ?? '')
@@ -1508,6 +1588,7 @@ async function loadReport() {
 }
 
 onMounted(async () => {
+  window.addEventListener('resize', handleResize)
   const u = localStorage.getItem('user')
   if (u) {
     try {
@@ -1524,6 +1605,12 @@ onMounted(async () => {
   await loadUsers()
   await loadOverview()
   await loadReport()
+  nextTick(() => relayoutTables())
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', handleResize)
+  if (resizeTimer) clearTimeout(resizeTimer)
 })
 
 async function loadCategories() {
@@ -1583,11 +1670,14 @@ async function loadSharePosts() {
       // 后端返回：statusKey = approved/rejected
       id: p.id,
       title: p.title || '',
+      content: p.content || '',
       author: p.author || '匿名',
       risk: p.statusKey === 'rejected' ? '中' : '低',
       status: p.status || (p.statusKey === 'rejected' ? '已驳回/隐藏' : '已通过/展示'),
       statusKey: p.statusKey || 'approved',
-      time: p.createdAt ? String(p.createdAt).substring(11, 16) : ''
+      time: p.createdAt ? String(p.createdAt).substring(11, 16) : '',
+      tags: p.tags || [],
+      commentCount: p.commentCount || 0
     }))
   } catch {
     ElMessage.error('加载帖子审核列表失败：请确认后端 8080 正在运行且已用管理员账号登录')
@@ -1650,7 +1740,7 @@ async function loadOverview() {
     radial-gradient(1000px 600px at 90% 10%, #d1fae5 0%, transparent 55%),
     linear-gradient(180deg, #f8fafc 0%, #eff6ff 100%);
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
 .mesh {
@@ -1743,7 +1833,7 @@ async function loadOverview() {
 .sideNoteRow { display: flex; justify-content: space-between; font-size: 13px; color: var(--admin-muted); }
 .sideNoteRow strong { color: var(--admin-ink); }
 
-.content { display: flex; flex-direction: column; gap: 22px; }
+.content { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
 .section { scroll-margin-top: 120px; }
 .sectionHeader {
   display: flex;
@@ -1779,6 +1869,7 @@ async function loadOverview() {
 .statNote { color: var(--admin-muted); }
 
 .panel {
+  min-width: 0;
   padding: 16px;
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.85);
@@ -1787,8 +1878,15 @@ async function loadOverview() {
 }
 
 .table { width: 100%; }
+:deep(.el-table__body-wrapper) { overflow-x: auto; }
+.postDetailWrap { display: grid; gap: 12px; }
+.postDetailTitle { font-size: 20px; font-weight: 700; line-height: 1.4; }
+.postDetailMeta { display: flex; flex-wrap: wrap; gap: 12px; color: var(--admin-muted); font-size: 12px; }
+.postDetailTags { display: flex; flex-wrap: wrap; gap: 8px; }
+.postDetailContent { white-space: pre-wrap; line-height: 1.9; color: rgba(15,23,42,.82); background: rgba(14,165,164,0.06); border: 1px solid rgba(14,165,164,0.2); border-radius: 12px; padding: 12px; max-height: 52vh; overflow: auto; }
 
 .selectSlim { min-width: 140px; }
+.videoUploadRow { margin-top: 8px; display: flex; align-items: center; gap: 8px; }
 
 .ruleGrid {
   display: grid;

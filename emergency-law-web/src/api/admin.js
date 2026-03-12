@@ -36,6 +36,15 @@ export function apiAdminDeleteLesson(courseId, id) {
   return http.delete(`/api/admin/courses/${courseId}/lessons/${id}`)
 }
 
+export function apiAdminUploadLessonVideo(courseId, file) {
+  const form = new FormData()
+  form.append('file', file)
+  return http.post(`/api/admin/courses/${courseId}/lessons/upload-video`, form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 120000
+  })
+}
+
 // --- 题库 / 试卷 ---
 export function apiAdminTestPapers() {
   return http.get('/api/admin/test/papers')
